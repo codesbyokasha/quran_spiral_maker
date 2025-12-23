@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quran Spiral Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- STYLES --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #222; /* Dark Studio BG */
+            margin: 0; padding: 0;
+            height: 100vh;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- CONTROL PANEL --- */
+        .controls {
+            background: white;
+            padding: 8px;
+            display: flex; flex-wrap: wrap; gap: 6px;
+            justify-content: center; align-items: center;
+            border-bottom: 3px solid #007bff;
+            z-index: 100;
+        }
+
+        .panel-group {
+            background: #f8f9fa; border: 1px solid #ddd;
+            padding: 4px 10px; border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .row { display: flex; gap: 5px; align-items: center; }
+
+        /* Main Section Labels */
+        .group-label { 
+            font-size: 10px; font-weight: bold; color: #555; 
+            text-transform: uppercase; margin-bottom: 4px; border-bottom: 1px solid #eee; padding-bottom: 2px;
+        }
+
+        /* Small Input Labels */
+        .input-label { font-size: 9px; color: #666; font-weight: bold; margin-right: 2px; }
+
+        input, select, textarea { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        input[type="number"] { width: 45px; }
+        input[type="color"] { width: 30px; height: 26px; padding: 0; border: none; cursor: pointer; }
+        
+        /* Buttons */
+        button {
+            padding: 6px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; font-size: 12px;
+        }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; }
+        .btn-purple { background: #6f42c1; }
+        .btn-grey { background: #6c757d; }
+
+        /* --- WORKSPACE --- */
+        .workspace {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            background: #333;
+        }
+
+        .scroll-container {
+            width: 100%; height: 100%;
+            overflow: auto;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 50px;
+        }
+
+        #paper {
+            background-color: white;
+            width: 800px; height: 800px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.6);
+            transition: width 0.1s, height 0.1s;
+        }
+
+        svg { width: 100%; height: 100%; display: block; }
+        
+        /* Font Config */
+        text { font-family: 'Amiri', 'Arial', sans-serif; font-weight: 700; direction: rtl; }
+
+        /* Zoom Widget */
+        .zoom-widget {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.95); padding: 8px 15px; border-radius: 30px;
+            display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="panel-group">
+            <div class="group-label">Source Material</div>
+            <div class="row">
+                <span class="input-label">Surah:</span>
+                <input type="number" id="surahNum" value="114" placeholder="#">
+                <button class="btn-grey" onclick="fetchSurah()">Fetch</button>
+                <button class="btn-grey" onclick="toggleManual()">✎ Text</button>
+            </div>
+            <textarea id="manualInput" rows="2" style="display:none; width: 180px; margin-top:4px;" placeholder="Paste Arabic text here..."></textarea>
+        </div>
+
+        <div class="panel-group">
+            <div class="group-label">Visual Styles</div>
+            <div class="row">
+                <span class="input-label">Color:</span>
+                <input type="color" id="textColor" value="#000000" onchange="generate()">
+                
+                <span class="input-label" style="margin-left:5px;">Size:</span>
+                <input type="number" id="fontSize" value="40">
+                
+                <span class="input-label" style="margin-left:5px;">Gap:</span>
+                <input type="number" id="gap" value="65">
+            </div>
+        </div>
+
+        <div class="panel-group">
+            <div class="group-label">Layout Options</div>
+            <div class="row">
+                <span class="input-label">Dir:</span>
+                <select id="direction" style="width:80px;">
+                    <option value="center">Center Out</option>
+                    <option value="outer">Outer In</option>
+                </select>
+                
+                <span class="input-label" style="margin-left:5px;">Square:</span>
+                <input type="checkbox" id="useSquare" onchange="generate()">
+                <input type="number" id="squareSize" value="200" onchange="generate()">
+                <span class="input-label">px</span>
+            </div>
+        </div>
+
+        <div class="panel-group" style="background:none; border:none;">
+            <div class="group-label">Export</div>
+            <div class="row">
+                <button class="btn-blue" onclick="generate()">Generate</button>
+                <button class="btn-purple" onclick="downloadSVG()">SVG</button>
+                <button class="btn-green" onclick="downloadPNG()">PNG</button>
+            </div>
+        </div>
+        
+        <div id="status" style="width:100%; text-align:center; color:#28a745; font-size:11px; margin-top:4px; font-weight:bold;">Ready</div>
+    </div>
+
+    <div class="workspace">
+        <div class="scroll-container">
+            <div id="paper">
+                <svg id="mainSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+        </div>
+        <div class="zoom-widget">
+            <span class="input-label" style="font-size:11px;">ZOOM</span>
+            <input type="range" min="10" max="300" value="80" oninput="handleZoom(this.value)">
+        </div>
+    </div>
+
+    <canvas id="measureCanvas" style="display:none;"></canvas>
+
+    <script>
+        let fullText = "";
+        let isManual = false;
+
+        window.onload = () => fetchSurah();
+
+        function toggleManual() {
+            const box = document.getElementById('manualInput');
+            if (box.style.display === 'none') {
+                box.style.display = 'block';
+                isManual = true;
+            } else {
+                box.style.display = 'none';
+                isManual = false;
+            }
+        }
+
+        function handleZoom(val) {
+            const paper = document.getElementById('paper');
+            const baseSize = 800; 
+            const newSize = baseSize * (val / 100);
+            paper.style.width = newSize + "px";
+            paper.style.height = newSize + "px";
+        }
+
+        async function fetchSurah() {
+            if(isManual) {
+                fullText = document.getElementById('manualInput').value;
+                if(!fullText) return alert("Please paste text first");
+                document.getElementById('status').innerText = "Using Manual Text";
+                generate();
+                return;
+            }
+
+            const num = document.getElementById('surahNum').value;
+            const s = document.getElementById('status');
+            s.innerText = "Loading..."; s.style.color = "orange";
+            
+            try {
+                const r = await fetch(`https://api.alquran.cloud/v1/surah/${num}/quran-simple-clean`);
+                const d = await r.json();
+                fullText = d.data.ayahs.map(a => a.text).join(" ۝ ") + " ۝ ";
+                s.innerText = "Loaded: " + d.data.englishName; s.style.color = "#28a745";
+                generate();
+            } catch(e) {
+                s.innerText = "Error loading"; s.style.color = "red";
+            }
+        }
+
+        function generate() {
+            if(isManual) fullText = document.getElementById('manualInput').value;
+            if(!fullText) return;
+
+            const svg = document.getElementById('mainSvg');
+            svg.innerHTML = "";
+
+            // Inputs
+            const color = document.getElementById('textColor').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const gap = parseInt(document.getElementById('gap').value);
+            const direction = document.getElementById('direction').value;
+            const useSquare = document.getElementById('useSquare').checked;
+            const squareSize = parseInt(document.getElementById('squareSize').value);
+
+            // 1. Measure Text
+            const ctx = document.getElementById('measureCanvas').getContext('2d');
+            ctx.font = `700 ${fontSize}px 'Amiri'`;
+            const textLen = ctx.measureText(fullText).width;
+
+            // 2. Spiral Calculation
+            const b = gap / (2 * Math.PI);
+            let startRadius = useSquare ? (squareSize / 2 + 10) : 0; 
+            let startTheta = startRadius / b;
+            const endTheta = Math.sqrt( (2 * (textLen + 3000) / b) + (startTheta*startTheta) );
+
+            // 3. Generate Points
+            const steps = 600 * ((endTheta - startTheta)/6);
+            const stepSize = (endTheta - startTheta) / steps;
+            
+            let points = [];
+            for(let t = startTheta; t <= endTheta; t+=stepSize) {
+                points.push({ x: (b*t)*Math.cos(t), y: (b*t)*Math.sin(t) });
+            }
+            if(direction === "center") points.reverse();
+
+            // 4. Draw
+            if(points.length < 2) return;
+            let d = `M ${points[0].x} ${points[0].y}`;
+            for(let i=1; i<points.length; i++) d += ` L ${points[i].x} ${points[i].y}`;
+
+            // Add Styles
+            const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+            style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap'); text { font-family: 'Amiri', 'Arial', sans-serif; font-weight: 700; }`;
+            svg.appendChild(style);
+
+            // Create Background Rect (White)
+            const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            bgRect.setAttribute("fill", "#ffffff"); 
+            svg.appendChild(bgRect);
+
+            // Path Element
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("id", "spiralP");
+            path.setAttribute("d", d);
+            path.setAttribute("fill", "none");
+            svg.appendChild(path);
+
+            // Text Element
+            const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt.setAttribute("font-size", fontSize);
+            txt.setAttribute("fill", color); 
+            txt.setAttribute("dy", fontSize * 0.35);
+
+            const tp = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+            tp.setAttribute("href", "#spiralP");
+            tp.textContent = fullText;
+            tp.setAttribute("startOffset", "100%");
+            if(direction === "center") tp.setAttribute("side", "right");
+            
+            txt.appendChild(tp);
+            svg.appendChild(txt);
+
+            // 5. Set ViewBox
+            const maxR = b * endTheta;
+            const dim = (maxR * 2) + (fontSize * 4);
+            const minCoord = -dim / 2;
+
+            svg.setAttribute("viewBox", `${minCoord} ${minCoord} ${dim} ${dim}`);
+            bgRect.setAttribute("x", minCoord);
+            bgRect.setAttribute("y", minCoord);
+            bgRect.setAttribute("width", dim);
+            bgRect.setAttribute("height", dim);
+        }
+
+        // --- EXPORT ---
+
+        function downloadSVG() {
+            const svg = document.getElementById('mainSvg');
+            const ser = new XMLSerializer();
+            let source = ser.serializeToString(svg);
+            if(!source.match(/^<svg[^>]+xmlns/)) source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            const blob = new Blob([source], {type:"image/svg+xml;charset=utf-8"});
+            saveFile(URL.createObjectURL(blob), "quran_spiral.svg");
+        }
+
+        function downloadPNG() {
+            const svg = document.getElementById('mainSvg');
+            const status = document.getElementById('status');
+            status.innerText = "Processing PNG...";
+
+            const renderSize = 3000;
+            const oldW = svg.getAttribute("width");
+            const oldH = svg.getAttribute("height");
+            svg.setAttribute("width", renderSize);
+            svg.setAttribute("height", renderSize);
+
+            const ser = new XMLSerializer();
+            const svgData = ser.serializeToString(svg);
+
+            if(oldW) svg.setAttribute("width", oldW); else svg.removeAttribute("width");
+            if(oldH) svg.setAttribute("height", oldH); else svg.removeAttribute("height");
+
+            const blob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                canvas.width = renderSize;
+                canvas.height = renderSize;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0,0, renderSize, renderSize);
+                ctx.drawImage(img, 0, 0, renderSize, renderSize);
+                saveFile(canvas.toDataURL("image/png"), "quran_spiral.png");
+                URL.revokeObjectURL(url);
+                status.innerText = "Done";
+            };
+            img.onerror = function() {
+                status.innerText = "Error";
+                alert("Please use SVG download button.");
+            };
+            img.src = url;
+        }
+
+        function saveFile(url, name) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
