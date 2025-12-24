@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Quran Spiral Studio - Ultra HD</title>
+    <title>Quran Spiral Studio - Final</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -253,7 +253,10 @@
             try {
                 const r = await fetch(`https://api.alquran.cloud/v1/surah/${num}/quran-simple-clean`);
                 const d = await r.json();
-                fullText = d.data.ayahs.map(a => a.text).join(" ۝ ") + " ۝ ";
+                
+                // CHANGE MADE HERE: Replaced ۝ with •
+                fullText = d.data.ayahs.map(a => a.text).join(" • ") + " • ";
+                
                 s.innerText = "Loaded: " + d.data.englishName; s.style.color = "#28a745";
                 generate();
             } catch(e) {
