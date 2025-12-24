@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Quran Spiral Studio - Final</title>
+    <title>Quran Spiral Studio - Ultra HD</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
@@ -371,10 +371,11 @@
         function downloadPNG() {
             const svg = document.getElementById('mainSvg');
             const status = document.getElementById('status');
-            status.innerText = "Processing PNG...";
+            status.innerText = "Generating 8K PNG...";
 
-            // Create high-res square output
-            const renderSize = 3000;
+            // ULTRA HIGH RESOLUTION SETTING
+            const renderSize = 8000; // 8K Resolution (~64 Megapixels)
+            
             const oldW = svg.getAttribute("width");
             const oldH = svg.getAttribute("height");
             svg.setAttribute("width", renderSize);
@@ -399,10 +400,15 @@
                 canvas.width = renderSize;
                 canvas.height = renderSize;
                 const ctx = canvas.getContext("2d");
+                
+                // Fill White Background
                 ctx.fillStyle = "#ffffff";
                 ctx.fillRect(0,0, renderSize, renderSize);
+                
+                // Draw High Res Image
                 ctx.drawImage(img, 0, 0, renderSize, renderSize);
-                saveFile(canvas.toDataURL("image/png"), "quran_spiral.png");
+                
+                saveFile(canvas.toDataURL("image/png"), "quran_spiral_8k.png");
                 URL.revokeObjectURL(url);
                 status.innerText = "Done";
             };
