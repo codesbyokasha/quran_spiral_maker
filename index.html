@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Quran Spiral Studio - Custom Font</title>
+    <title>Quran Spiral Studio - Final</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- STYLES --- */
+        /* --- STYLES (Your Exact UI) --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #222; /* Dark Studio BG */
@@ -166,7 +168,28 @@
         let currentFontFamily = "'Amiri', 'Arial', sans-serif";
         let currentFontWeight = "700";
 
-        window.onload = () => fetchSurah();
+        // Auto-load a default font (Amiri) as Base64 so default export works
+        window.onload = async () => {
+            const stat = document.getElementById('status');
+            stat.innerText = "Loading Default Font...";
+            try {
+                // Fetch default Amiri font as blob and convert to data URL
+                const r = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/amiri/files/amiri-arabic-700-normal.woff');
+                const b = await r.blob();
+                const reader = new FileReader();
+                reader.onload = e => {
+                    customFontData = e.target.result; // Save default font
+                    currentFontFamily = "'UploadedFont'"; // Use uniform name
+                    injectFontFace(customFontData);
+                    stat.innerText = "Ready";
+                    fetchSurah();
+                };
+                reader.readAsDataURL(b);
+            } catch(e) {
+                stat.innerText = "Offline Mode";
+                fetchSurah();
+            }
+        };
 
         function toggleManual() {
             const box = document.getElementById('manualInput');
@@ -187,25 +210,31 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 customFontData = e.target.result; // This is the Base64 Data URL
-                
-                // Inject style into page so we can see it in preview
-                const newStyle = document.createElement('style');
-                newStyle.textContent = `
-                    @font-face {
-                        font-family: 'UploadedFont';
-                        src: url('${customFontData}');
-                    }
-                `;
-                document.head.appendChild(newStyle);
+                injectFontFace(customFontData);
                 
                 // Update Global Settings
-                currentFontFamily = "'UploadedFont'";
                 currentFontWeight = "normal"; // Custom fonts often don't need bold forcing
-                
                 document.getElementById('status').innerText = "Font Loaded: " + file.name;
                 generate(); // Redraw with new font
             };
             reader.readAsDataURL(file);
+        }
+
+        function injectFontFace(base64) {
+            // Remove old style if exists
+            const old = document.getElementById('dynamicFontStyle');
+            if(old) old.remove();
+
+            const newStyle = document.createElement('style');
+            newStyle.id = 'dynamicFontStyle';
+            newStyle.textContent = `
+                @font-face {
+                    font-family: 'UploadedFont';
+                    src: url('${base64}');
+                }
+            `;
+            document.head.appendChild(newStyle);
+            currentFontFamily = "'UploadedFont'";
         }
 
         async function fetchSurah() {
@@ -275,15 +304,14 @@
 
             // Add Styles (Crucial for Export)
             const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+            // Embed the font BASE64 directly into SVG style for portability
             if (customFontData) {
-                // If custom font, embed it directly into SVG style
                 style.textContent = `
                     @font-face { font-family: 'UploadedFont'; src: url('${customFontData}'); }
-                    text { font-family: 'UploadedFont'; font-weight: normal; }
+                    text { font-family: 'UploadedFont'; font-weight: ${currentFontWeight}; direction: rtl; }
                 `;
             } else {
-                // Default Amiri
-                style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap'); text { font-family: 'Amiri', 'Arial', sans-serif; font-weight: 700; }`;
+                style.textContent = `text { font-family: serif; font-weight: 700; direction: rtl; }`;
             }
             svg.appendChild(style);
 
@@ -351,10 +379,14 @@
             const oldH = svg.getAttribute("height");
             svg.setAttribute("width", renderSize);
             svg.setAttribute("height", renderSize);
+            
+            // Explicitly set namespace
+            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
             const ser = new XMLSerializer();
             const svgData = ser.serializeToString(svg);
 
+            // Restore UI size
             if(oldW) svg.setAttribute("width", oldW); else svg.removeAttribute("width");
             if(oldH) svg.setAttribute("height", oldH); else svg.removeAttribute("height");
 
@@ -374,11 +406,11 @@
                 URL.revokeObjectURL(url);
                 status.innerText = "Done";
             };
-            img.onerror = function() {
-                status.innerText = "Error";
-                alert("If image is blank, please check if your browser allows data-uri images or try Firefox. Custom fonts fix this usually.");
-            };
-            img.src = url;
+            
+            // Wait slightly for image to parse the base64 font
+            setTimeout(() => {
+                img.src = url;
+            }, 100);
         }
 
         function saveFile(url, name) {
