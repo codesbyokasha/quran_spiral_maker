@@ -104,8 +104,8 @@
                 
                 <span class="input-label" style="margin-left:5px;">Font:</span>
                 <select id="fontSelect" onchange="changeFont()" style="width:100px;">
-                    <option value="alqalam">Al Qalam</option>
                     <option value="saleem">PDMS Saleem</option>
+                    <option value="alqalam">Al Qalam</option>
                 </select>
 
                 <span class="input-label" style="margin-left:5px;">Size:</span>
@@ -204,13 +204,13 @@
                     throw new Error("No fonts could be loaded.");
                 }
 
-                // Set initial active font (Default to Al Qalam, fallback to Saleem)
-                if (loadedFonts.alqalam) {
-                    customFontData = loadedFonts.alqalam;
-                    document.getElementById('fontSelect').value = 'alqalam';
-                } else {
+                // Set initial active font (Default to Saleem, fallback to Al Qalam)
+                if (loadedFonts.saleem) {
                     customFontData = loadedFonts.saleem;
                     document.getElementById('fontSelect').value = 'saleem';
+                } else {
+                    customFontData = loadedFonts.alqalam;
+                    document.getElementById('fontSelect').value = 'alqalam';
                 }
 
                 currentFontFamily = "'CustomArabicFont'";
