@@ -125,9 +125,8 @@
                     <option value="outer">Outer In</option>
                 </select>
                 
-                <span class="input-label" style="margin-left:5px;">Square:</span>
-                <input type="checkbox" id="useSquare" onchange="generate()">
-                <input type="number" id="squareSize" value="200" onchange="generate()">
+                <span class="input-label" style="margin-left:5px;">Center Space:</span>
+                <input type="number" id="squareSize" value="100" onchange="generate()">
                 <span class="input-label">px</span>
             </div>
         </div>
@@ -306,8 +305,7 @@
             const fontSize = parseInt(document.getElementById('fontSize').value);
             const gap = parseInt(document.getElementById('gap').value);
             const direction = document.getElementById('direction').value;
-            const useSquare = document.getElementById('useSquare').checked;
-            const squareSize = parseInt(document.getElementById('squareSize').value);
+            const squareSize = parseInt(document.getElementById('squareSize').value); // Extracted size value only
 
             // 1. Measure Text (Using correct loaded font)
             const ctx = document.getElementById('measureCanvas').getContext('2d');
@@ -316,7 +314,7 @@
 
             // 2. Spiral Calculation
             const b = gap / (2 * Math.PI);
-            let startRadius = useSquare ? (squareSize / 2 + 10) : 0; 
+            let startRadius = (squareSize / 2) + 10; // Square is always applied now
             let startTheta = startRadius / b;
             const endTheta = Math.sqrt( (2 * (textLen + 3000) / b) + (startTheta*startTheta) );
 
