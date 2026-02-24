@@ -21,7 +21,7 @@
         .controls {
             background: white;
             padding: 8px;
-            display: flex; flex-wrap: wrap; gap: 6px;
+            display: flex; flex-wrap: wrap; gap: 8px;
             justify-content: center; align-items: center;
             border-bottom: 3px solid #007bff;
             z-index: 100;
@@ -29,16 +29,21 @@
 
         .panel-group {
             background: #f8f9fa; border: 1px solid #ddd;
-            padding: 4px 10px; border-radius: 6px;
+            padding: 6px 10px; border-radius: 6px;
             display: flex; flex-direction: column; justify-content: center;
         }
-        .row { display: flex; gap: 5px; align-items: center; }
+        
+        /* Flex Wrap added to allow wrapping on mobile */
+        .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        
+        /* Keeps labels and their inputs together when wrapping */
+        .item-pair { display: flex; align-items: center; gap: 3px; }
 
         .group-label { 
             font-size: 10px; font-weight: bold; color: #555; 
             text-transform: uppercase; margin-bottom: 4px; border-bottom: 1px solid #eee; padding-bottom: 2px;
         }
-        .input-label { font-size: 9px; color: #666; font-weight: bold; margin-right: 2px; }
+        .input-label { font-size: 9px; color: #666; font-weight: bold; }
 
         input, select, textarea { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
         input[type="number"] { width: 45px; }
@@ -88,8 +93,10 @@
         <div class="panel-group">
             <div class="group-label">Source Material</div>
             <div class="row">
-                <span class="input-label">Surah:</span>
-                <input type="number" id="surahNum" value="114" placeholder="#">
+                <div class="item-pair">
+                    <span class="input-label">Surah:</span>
+                    <input type="number" id="surahNum" value="114" placeholder="#">
+                </div>
                 <button class="btn-grey" onclick="fetchSurah()">Fetch</button>
                 <button class="btn-grey" onclick="toggleManual()">✎ Text</button>
             </div>
@@ -99,40 +106,51 @@
         <div class="panel-group">
             <div class="group-label">Visual Styles</div>
             <div class="row">
-                <span class="input-label">Color:</span>
-                <input type="color" id="textColor" value="#000000" onchange="generate()">
+                <div class="item-pair">
+                    <span class="input-label">Color:</span>
+                    <input type="color" id="textColor" value="#000000" onchange="generate()">
+                </div>
                 
-                <span class="input-label" style="margin-left:5px;">Font:</span>
-                <select id="fontSelect" onchange="changeFont()" style="width:100px;">
-                    <option value="saleem">PDMS Saleem</option>
-                    <option value="alqalam">Al Qalam</option>
-                </select>
+                <div class="item-pair">
+                    <span class="input-label">Font:</span>
+                    <select id="fontSelect" onchange="changeFont()" style="width:100px;">
+                        <option value="saleem">PDMS Saleem</option>
+                        <option value="alqalam">Al Qalam</option>
+                    </select>
+                </div>
 
-                <span class="input-label" style="margin-left:5px;">Size:</span>
-                <input type="number" id="fontSize" value="40" onchange="generate()">
+                <div class="item-pair">
+                    <span class="input-label">Size:</span>
+                    <input type="number" id="fontSize" value="40" onchange="generate()">
+                </div>
                 
-                <span class="input-label" style="margin-left:5px;">Gap:</span>
-                <input type="number" id="gap" value="65" onchange="generate()">
+                <div class="item-pair">
+                    <span class="input-label">Gap:</span>
+                    <input type="number" id="gap" value="65" onchange="generate()">
+                </div>
             </div>
         </div>
 
         <div class="panel-group">
             <div class="group-label">Layout Options</div>
             <div class="row">
-                <span class="input-label">Dir:</span>
-                <select id="direction" onchange="generate()" style="width:80px;">
-                    <option value="center">Center Out</option>
-                    <option value="outer">Outer In</option>
-                </select>
+                <div class="item-pair">
+                    <span class="input-label">Dir:</span>
+                    <select id="direction" onchange="generate()" style="width:80px;">
+                        <option value="center">Center Out</option>
+                        <option value="outer">Outer In</option>
+                    </select>
+                </div>
                 
-                <span class="input-label" style="margin-left:5px;">Center Space:</span>
-                <input type="number" id="squareSize" value="100" onchange="generate()">
-                <span class="input-label">px</span>
+                <div class="item-pair">
+                    <span class="input-label">Center Space:</span>
+                    <input type="number" id="squareSize" value="100" onchange="generate()">
+                    <span class="input-label">px</span>
+                </div>
             </div>
         </div>
 
-        <div class="panel-group" style="background:none; border:none;">
-            <div class="group-label">Export</div>
+        <div class="panel-group" style="background:none; border:none; padding-top: 14px;">
             <div class="row">
                 <button class="btn-blue" onclick="generate()">Generate</button>
                 <button class="btn-green" onclick="downloadPNG()">Download PNG</button>
