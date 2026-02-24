@@ -102,11 +102,17 @@
                 <span class="input-label">Color:</span>
                 <input type="color" id="textColor" value="#000000" onchange="generate()">
                 
+                <span class="input-label" style="margin-left:5px;">Font:</span>
+                <select id="fontSelect" onchange="changeFont()" style="width:100px;">
+                    <option value="alqalam">Al Qalam</option>
+                    <option value="saleem">PDMS Saleem</option>
+                </select>
+
                 <span class="input-label" style="margin-left:5px;">Size:</span>
-                <input type="number" id="fontSize" value="40">
+                <input type="number" id="fontSize" value="40" onchange="generate()">
                 
                 <span class="input-label" style="margin-left:5px;">Gap:</span>
-                <input type="number" id="gap" value="65">
+                <input type="number" id="gap" value="65" onchange="generate()">
             </div>
         </div>
 
@@ -114,7 +120,7 @@
             <div class="group-label">Layout Options</div>
             <div class="row">
                 <span class="input-label">Dir:</span>
-                <select id="direction" style="width:80px;">
+                <select id="direction" onchange="generate()" style="width:80px;">
                     <option value="center">Center Out</option>
                     <option value="outer">Outer In</option>
                 </select>
@@ -152,33 +158,67 @@
         let isManual = false;
         
         // Font Variables
-        let customFontData = null; // Stores Base64 string of font
+        let loadedFonts = {
+            alqalam: null,
+            saleem: null
+        };
+        let customFontData = null; // Stores currently active Base64 string
         let currentFontFamily = "'Amiri', 'Arial', sans-serif"; // Fallback
-        let currentFontWeight = "normal"; // Default for Calligraphy fonts
+        let currentFontWeight = "normal";
 
-        // --- AUTOMATIC LOADING OF AL QALAM FONT ---
+        // Helper function to read blob as Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // --- AUTOMATIC LOADING OF FONTS ---
         window.onload = async () => {
             const stat = document.getElementById('status');
-            stat.innerText = "Loading Al Qalam Font...";
+            stat.innerText = "Loading Fonts...";
             
             try {
-                // Fetch the local font from the 'fonts' folder
-                const r = await fetch('fonts/alqalam.ttf');
+                // Fetch both fonts concurrently
+                const [reqAlQalam, reqSaleem] = await Promise.all([
+                    fetch('fonts/alqalam.ttf').catch(() => null),
+                    fetch('fonts/pdms_saleem.ttf').catch(() => null)
+                ]);
+
+                // Process Al Qalam
+                if (reqAlQalam && reqAlQalam.ok) {
+                    const blob1 = await reqAlQalam.blob();
+                    loadedFonts.alqalam = await blobToBase64(blob1);
+                }
+
+                // Process PDMS Saleem
+                if (reqSaleem && reqSaleem.ok) {
+                    const blob2 = await reqSaleem.blob();
+                    loadedFonts.saleem = await blobToBase64(blob2);
+                }
+
+                // Verify at least one loaded
+                if (!loadedFonts.alqalam && !loadedFonts.saleem) {
+                    throw new Error("No fonts could be loaded.");
+                }
+
+                // Set initial active font (Default to Al Qalam, fallback to Saleem)
+                if (loadedFonts.alqalam) {
+                    customFontData = loadedFonts.alqalam;
+                    document.getElementById('fontSelect').value = 'alqalam';
+                } else {
+                    customFontData = loadedFonts.saleem;
+                    document.getElementById('fontSelect').value = 'saleem';
+                }
+
+                currentFontFamily = "'CustomArabicFont'";
+                injectFontFace(customFontData);
                 
-                if (!r.ok) throw new Error(`Font not found (Status: ${r.status})`);
-                
-                const b = await r.blob();
-                const reader = new FileReader();
-                
-                reader.onload = e => {
-                    customFontData = e.target.result; // Save Font Data
-                    currentFontFamily = "'AlQalamCustom'"; // Set Logic Name
-                    injectFontFace(customFontData);
-                    stat.innerText = "Ready (Al Qalam Loaded)";
-                    fetchSurah(); // Load Surah 114 by default
-                };
-                
-                reader.readAsDataURL(b);
+                stat.innerText = "Ready (Fonts Loaded)";
+                fetchSurah(); // Load Surah 114 by default
+
             } catch(e) {
                 console.error(e);
                 stat.innerText = "Font Error: Using System Font";
@@ -198,6 +238,17 @@
             }
         }
 
+        function changeFont() {
+            const selected = document.getElementById('fontSelect').value;
+            if (loadedFonts[selected]) {
+                customFontData = loadedFonts[selected];
+                injectFontFace(customFontData);
+                generate();
+            } else {
+                alert("This font failed to load initially.");
+            }
+        }
+
         function injectFontFace(base64) {
             // Remove old style if exists
             const old = document.getElementById('dynamicFontStyle');
@@ -205,15 +256,15 @@
 
             const newStyle = document.createElement('style');
             newStyle.id = 'dynamicFontStyle';
-            // We force the name 'AlQalamCustom' for any loaded font to keep logic simple
+            // We force a standard name so export logic stays clean
             newStyle.textContent = `
                 @font-face {
-                    font-family: 'AlQalamCustom';
+                    font-family: 'CustomArabicFont';
                     src: url('${base64}');
                 }
             `;
             document.head.appendChild(newStyle);
-            currentFontFamily = "'AlQalamCustom'";
+            currentFontFamily = "'CustomArabicFont'";
         }
 
         async function fetchSurah() {
@@ -289,8 +340,8 @@
             // Embed the font BASE64 directly into SVG style for portability
             if (customFontData) {
                 style.textContent = `
-                    @font-face { font-family: 'AlQalamCustom'; src: url('${customFontData}'); }
-                    text { font-family: 'AlQalamCustom'; font-weight: ${currentFontWeight}; direction: rtl; }
+                    @font-face { font-family: 'CustomArabicFont'; src: url('${customFontData}'); }
+                    text { font-family: 'CustomArabicFont'; font-weight: ${currentFontWeight}; direction: rtl; }
                 `;
             } else {
                 style.textContent = `text { font-family: serif; font-weight: 700; direction: rtl; }`;
