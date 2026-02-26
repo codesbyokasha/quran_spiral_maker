@@ -301,8 +301,8 @@
                 const r = await fetch(`https://api.alquran.cloud/v1/surah/${num}/quran-simple-clean`);
                 const d = await r.json();
                 
-                // Formatting: Replaced ۝ with •
-                fullText = d.data.ayahs.map(a => a.text).join(" • ") + " • ";
+                // Joins verses with a space and removes any API-provided star/end markers
+                fullText = d.data.ayahs.map(a => a.text.replace(/[۞۝]/g, '')).join(" ");
                 
                 s.innerText = "Loaded: " + d.data.englishName; s.style.color = "#28a745";
                 generate();
