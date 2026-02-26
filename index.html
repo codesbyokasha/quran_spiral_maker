@@ -126,7 +126,7 @@
                 
                 <div class="item-pair">
                     <span class="input-label">Gap:</span>
-                    <input type="number" id="gap" value="40" onchange="generate()">
+                    <input type="number" id="gap" value="45" onchange="generate()">
                 </div>
             </div>
         </div>
@@ -225,9 +225,11 @@
                 if (loadedFonts.saleem) {
                     customFontData = loadedFonts.saleem;
                     document.getElementById('fontSelect').value = 'saleem';
+                    document.getElementById('gap').value = 45; // Auto-set gap for saleem
                 } else {
                     customFontData = loadedFonts.alqalam;
                     document.getElementById('fontSelect').value = 'alqalam';
+                    document.getElementById('gap').value = 55; // Auto-set gap for alqalam
                 }
 
                 currentFontFamily = "'CustomArabicFont'";
@@ -260,6 +262,14 @@
             if (loadedFonts[selected]) {
                 customFontData = loadedFonts[selected];
                 injectFontFace(customFontData);
+                
+                // Adjust gap dynamically based on selected font
+                if (selected === 'saleem') {
+                    document.getElementById('gap').value = 45;
+                } else if (selected === 'alqalam') {
+                    document.getElementById('gap').value = 55;
+                }
+                
                 generate();
             } else {
                 alert("This font failed to load initially.");
