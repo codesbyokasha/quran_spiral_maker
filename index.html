@@ -48,10 +48,13 @@
         input, select, textarea { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
         input[type="number"] { width: 45px; }
         input[type="color"] { width: 30px; height: 26px; padding: 0; border: none; cursor: pointer; }
+        input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
         
         button {
             padding: 6px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; font-size: 12px;
+            transition: opacity 0.2s;
         }
+        button:hover { opacity: 0.8; }
         .btn-blue { background: #007bff; }
         .btn-green { background: #28a745; }
         .btn-grey { background: #6c757d; }
@@ -100,7 +103,18 @@
                 <button class="btn-grey" onclick="fetchSurah()">Fetch</button>
                 <button class="btn-grey" onclick="toggleManual()">✎ Text</button>
             </div>
-            <textarea id="manualInput" rows="2" dir="rtl" style="display:none; width: 180px; margin-top:4px;" placeholder="Paste Arabic text here..."></textarea>
+            <textarea id="manualInput" rows="2" dir="rtl" style="display:none; width: 180px; margin-top:4px;" placeholder="Paste Arabic text here..." oninput="generate()"></textarea>
+            
+            <div class="row" id="manualControls" style="display:none; margin-top: 5px;">
+                <div class="item-pair">
+                    <input type="checkbox" id="stripAiraab" onchange="generate()">
+                    <span class="input-label" style="cursor: pointer;" onclick="document.getElementById('stripAiraab').click()">Remove Airaab</span>
+                </div>
+                <div class="item-pair" style="margin-left: 5px;">
+                    <input type="checkbox" id="separateLetters" onchange="generate()">
+                    <span class="input-label" style="cursor: pointer;" onclick="document.getElementById('separateLetters').click()">Separate Letters</span>
+                </div>
+            </div>
         </div>
 
         <div class="panel-group">
@@ -154,6 +168,7 @@
             <div class="row">
                 <button class="btn-blue" onclick="generate()">Generate</button>
                 <button class="btn-green" onclick="downloadPNG()">Download PNG</button>
+                <button class="btn-grey" id="copyBtn" style="display:none;" onclick="copyProcessedText()">Copy Processed Text</button>
             </div>
         </div>
         
@@ -248,11 +263,18 @@
 
         function toggleManual() {
             const box = document.getElementById('manualInput');
+            const manualControls = document.getElementById('manualControls');
+            const copyBtn = document.getElementById('copyBtn');
+            
             if (box.style.display === 'none') {
                 box.style.display = 'block';
+                manualControls.style.display = 'flex';
+                copyBtn.style.display = 'inline-block';
                 isManual = true;
             } else {
                 box.style.display = 'none';
+                manualControls.style.display = 'none';
+                copyBtn.style.display = 'none';
                 isManual = false;
             }
         }
@@ -322,8 +344,30 @@
         }
 
         function generate() {
-            if(isManual) fullText = document.getElementById('manualInput').value;
-            if(!fullText) return;
+            if(isManual) {
+                fullText = document.getElementById('manualInput').value || "";
+                
+                // --- MANUAL TEXT PROCESSING ---
+                const stripAiraab = document.getElementById('stripAiraab').checked;
+                const separateLetters = document.getElementById('separateLetters').checked;
+
+                if (stripAiraab) {
+                    fullText = fullText.replace(/[\p{P}\p{S}\p{N}a-zA-Z\u06D6-\u06ED\u06DD\u06DE\u06E9]/gu, ' ');
+                    fullText = fullText.replace(/(?:^|\s)(لا|ج|ط|قف|م|ق|صلے|ص|ز|ع|وقف)(?=\s|$)/g, ' ');
+                    fullText = fullText.replace(/\p{M}/gu, '');
+                    fullText = fullText.replace(/\s+/g, ' ').trim();
+                }
+
+                if (separateLetters) {
+                    fullText = fullText.replace(/\s+/g, '').split('').join(' ');
+                }
+            }
+
+            if(!fullText) {
+                const svg = document.getElementById('mainSvg');
+                svg.innerHTML = "";
+                return;
+            }
 
             const svg = document.getElementById('mainSvg');
             svg.innerHTML = "";
@@ -414,6 +458,26 @@
             bgRect.setAttribute("y", minCoord);
             bgRect.setAttribute("width", dim);
             bgRect.setAttribute("height", dim);
+        }
+
+        // --- NEW COPY FUNCTION ---
+        function copyProcessedText() {
+            if (!fullText) return;
+            
+            navigator.clipboard.writeText(fullText).then(() => {
+                const status = document.getElementById('status');
+                status.innerText = "Processed Text Copied!";
+                status.style.color = "#007bff";
+                
+                // Reset status text after 2 seconds
+                setTimeout(() => { 
+                    status.innerText = "Ready"; 
+                    status.style.color = "#28a745";
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert("Failed to copy to clipboard.");
+            });
         }
 
         // --- EXPORT ---
