@@ -352,9 +352,20 @@
                 const separateLetters = document.getElementById('separateLetters').checked;
 
                 if (stripAiraab) {
-                    fullText = fullText.replace(/[\p{P}\p{S}\p{N}a-zA-Z\u06D6-\u06ED\u06DD\u06DE\u06E9]/gu, ' ');
+                    // 1. Remove specific Quranic combining marks by replacing them with an EMPTY STRING.
+                    // This stops words from breaking apart.
+                    fullText = fullText.replace(/[\u06D6-\u06ED\u06DD\u06DE\u06E9]/gu, '');
+
+                    // 2. Remove punctuation, symbols, numbers, and English letters by replacing them with a SPACE.
+                    fullText = fullText.replace(/[\p{P}\p{S}\p{N}a-zA-Z]/gu, ' ');
+
+                    // 3. Keep the distinguishing stop characters feature you added
                     fullText = fullText.replace(/(?:^|\s)(لا|ج|ط|قف|م|ق|صلے|ص|ز|ع|وقف)(?=\s|$)/g, ' ');
+
+                    // 4. Remove all remaining combining marks (Airaab/Tashkeel)
                     fullText = fullText.replace(/\p{M}/gu, '');
+
+                    // 5. Clean up extra spaces
                     fullText = fullText.replace(/\s+/g, ' ').trim();
                 }
 
