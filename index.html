@@ -127,10 +127,12 @@
                 
                 <div class="item-pair">
                     <span class="input-label">Font:</span>
-                    <select id="fontSelect" onchange="changeFont()" style="width:100px;">
+                    <select id="fontSelect" onchange="changeFont()" style="width:110px;">
                         <option value="saleem">PDMS Saleem</option>
                         <option value="alqalam">Al Qalam</option>
+                        <option value="custom">Custom Font...</option>
                     </select>
+                    <input type="file" id="customFontUpload" accept=".ttf,.otf,.woff,.woff2" style="display:none;" onchange="handleCustomFontUpload(event)">
                 </div>
 
                 <div class="item-pair">
@@ -192,11 +194,13 @@
         // Font Variables
         let loadedFonts = {
             alqalam: null,
-            saleem: null
+            saleem: null,
+            custom: null
         };
         let customFontData = null; // Stores currently active Base64 string
         let currentFontFamily = "'Amiri', 'Arial', sans-serif"; // Fallback
         let currentFontWeight = "normal";
+        let previousFont = "saleem"; // Tracks previous selection for cancellation fallback
 
         // Helper function to read blob as Base64
         function blobToBase64(blob) {
@@ -241,10 +245,12 @@
                     customFontData = loadedFonts.saleem;
                     document.getElementById('fontSelect').value = 'saleem';
                     document.getElementById('gap').value = 45; // Auto-set gap for saleem
+                    previousFont = 'saleem';
                 } else {
                     customFontData = loadedFonts.alqalam;
                     document.getElementById('fontSelect').value = 'alqalam';
                     document.getElementById('gap').value = 60; // Auto-set gap for alqalam
+                    previousFont = 'alqalam';
                 }
 
                 currentFontFamily = "'CustomArabicFont'";
@@ -281,9 +287,16 @@
 
         function changeFont() {
             const selected = document.getElementById('fontSelect').value;
+            
+            if (selected === 'custom') {
+                document.getElementById('customFontUpload').click();
+                return; // Wait for upload event
+            }
+
             if (loadedFonts[selected]) {
                 customFontData = loadedFonts[selected];
                 injectFontFace(customFontData);
+                previousFont = selected;
                 
                 // Adjust gap dynamically based on selected font
                 if (selected === 'saleem') {
@@ -296,6 +309,41 @@
             } else {
                 alert("This font failed to load initially.");
             }
+        }
+
+        async function handleCustomFontUpload(event) {
+            const file = event.target.files[0];
+            
+            if (!file) {
+                // User cancelled the file dialog, revert dropdown
+                document.getElementById('fontSelect').value = previousFont;
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.innerText = "Processing Custom Font...";
+            status.style.color = "orange";
+
+            try {
+                const base64 = await blobToBase64(file);
+                loadedFonts.custom = base64;
+                customFontData = base64;
+                previousFont = 'custom';
+                
+                injectFontFace(customFontData);
+                generate();
+                
+                status.innerText = "Custom Font Loaded Successfully!";
+                status.style.color = "#28a745";
+            } catch (e) {
+                console.error("Error loading custom font:", e);
+                status.innerText = "Failed to load custom font.";
+                status.style.color = "red";
+                document.getElementById('fontSelect').value = previousFont;
+            }
+            
+            // Reset input so the same file can be selected again if needed
+            event.target.value = '';
         }
 
         function injectFontFace(base64) {
